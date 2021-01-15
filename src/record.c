@@ -263,7 +263,7 @@ void SVR_Netchan_Transmit(client_t *client, msg_t *msg) {
 
 			msg_t msg_c = *msg;
 			MSG_WriteByte(&msg_c, svc_EOF);
-			SVR_WriteDemoMessage(record, &msg_c, 0);
+			SVR_WriteDemoMessage(record, &msg_c);
 
 		}
 
