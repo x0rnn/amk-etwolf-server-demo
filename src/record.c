@@ -22,23 +22,6 @@ inline static record_t *GetRecord(client_t *client) {
 }
 
 /**
- * Determines whether the current message is delta compressed.
- */
-static inline qboolean IsDelta(client_t *client) {
-
-	if (client->deltaMessage <= 0 || client->state != CS_ACTIVE) {
-		return qfalse;
-	} else if (client->netchan.outgoingSequence - client->deltaMessage >= (PACKET_BACKUP - 3)) {
-		return qfalse;
-	} else if ((&client->frames[client->deltaMessage & PACKET_MASK])->first_entity <= svs->nextSnapshotEntities - svs->numSnapshotEntities) {
-		return qfalse;
-	}
-
-	return qtrue;
-
-}
-
-/**
  * Writes data to the demo.
  */
 static void SVR_Write(record_t *record, void *buffer, size_t size) {
@@ -56,22 +39,19 @@ static void SVR_Write(record_t *record, void *buffer, size_t size) {
 
 }
 
-//                                                                     / this unnecessary?
-static void SVR_WriteDemoMessage(record_t *record, msg_t *msg, int headerBytes) {
+static void SVR_WriteDemoMessage(record_t *record, msg_t *msg) {
 
-	int len, swLen;
+	int swLen;
 
 	client_t *client = GetClient(record);
 
-	len   = client->netchan.outgoingSequence;
-	swLen = LittleLong(len);
+	swLen = LittleLong(client->netchan.outgoingSequence);
 	SVR_Write(record, &swLen, 4);
 
-	len   = msg->cursize - headerBytes;
-	swLen = LittleLong(len);
+	swLen = LittleLong(msg->cursize);
 	SVR_Write(record, &swLen, 4);
 
-	SVR_Write(record, msg->data + headerBytes, len);
+	SVR_Write(record, msg->data, msg->cursize);
 
 }
 
@@ -140,8 +120,6 @@ static void SVR_CreateGameStateMessage(record_t *record, msg_t *msg, qboolean up
 	MSG_WriteLong(msg, GetClientNumber(record));
 	MSG_WriteLong(msg, sv->checksumFeed);
 
-	//MSG_WriteShort(msg, 0); // Why?
-
 }
 
 /**
@@ -173,10 +151,6 @@ void SVR_Record(client_t *client) {
 	SVR_Write(record, &len, 4);
 
 	SVR_Write(record, msg.data, msg.cursize);
-
-	Com_Printf("SVR_Record() completed.\n");
-
-	//SVR_StopRecord(client);
 
 }
 
@@ -277,16 +251,11 @@ void SVR_StopRecord_f(void) {
  */
 void SVR_Netchan_Transmit(client_t *client, msg_t *msg) {
 
-	if (client->deltaMessage <= 0 || client->state != CS_ACTIVE || client->netchan.outgoingSequence - client->deltaMessage >= (PACKET_BACKUP - 3)) {
-		Com_Printf("NON-DELTA\n");
-	}
-
 	record_t *record = GetRecord(client);
 
 	if (record->recording && client->state == CS_ACTIVE) {
 
 		if (record->waiting && (client->deltaMessage <= 0 || client->netchan.outgoingSequence - client->deltaMessage >= (PACKET_BACKUP - 3))) {
-			Com_Printf("First non-delta message.\n");
 			record->waiting = qfalse;
 		}
 
@@ -325,10 +294,6 @@ void SVR_SendClientGameState(client_t *client) {
 
 	MSG_Init(&msg, bufData, sizeof(bufData));
 
-//	while (client->state && client->netchan.unsentFragments) {
-//		SV_Netchan_TransmitNextFragment(client);
-//	}
-
 	client->state         = CS_PRIMED;
 	client->pureAuthentic = 0;
 	client->gotCP         = qfalse;
@@ -337,51 +302,5 @@ void SVR_SendClientGameState(client_t *client) {
 
 	SVR_CreateGameStateMessage(GetRecord(client), &msg, qtrue);
 	SV_SendMessageToClient(&msg, client);
-
-}
-
-// Perhaps just JMP?
-void SVR_SendMessageToClient(msg_t *msg, client_t *client) {
-
-//	int   rateMsec;
-//	msg_t msg_c;
-//
-//	record_t *record = GetRecord(client);
-//
-//	while (client->state && client->netchan.unsentFragments) {
-//		SV_Netchan_TransmitNextFragment(client);
-//	}
-//
-//	client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageSize = msg->cursize;
-//	client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageSent = svs->time;
-//	client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageAcked = -1;
-//
-//	if (record->recording && !record->waiting) {
-//		msg_c = *msg;
-//		MSG_WriteByte(&msg_c, svc_EOF);
-//		SVR_WriteDemoMessage(record, &msg_c, 0);
-//	}
-//
-//	SV_Netchan_Transmit(client, msg);
-//
-//	if (client->netchan.remoteAddress.type == NA_LOOPBACK || (sv_lanForceRate->integer && Sys_IsLANAddress(client->netchan.remoteAddress))) {
-//		client->nextSnapshotTime = svs->time - 1;
-//		return;
-//	}
-//
-//	rateMsec = SV_RateMsec( client, msg->cursize );
-//
-//	if (!*client->downloadName && rateMsec < client->snapshotMsec) {
-//		rateMsec = client->snapshotMsec;
-//		client->rateDelayed = qfalse;
-//	} else {
-//		client->rateDelayed = qtrue;
-//	}
-//
-//	client->nextSnapshotTime = svs->time + rateMsec;
-//
-//	if (client->state != CS_ACTIVE && !*client->downloadName && client->nextSnapshotTime < svs->time + 1000) {
-//		client->nextSnapshotTime = svs->time + 1000;
-//	}
 
 }

@@ -484,7 +484,6 @@ void    (*SV_Netchan_Transmit)(client_t *client, msg_t *msg);
 void    (*SV_ExecuteClientMessage)(client_t *cl, msg_t *msg);
 void    (*SV_SendClientGameState)(client_t *client);
 void    (*SV_SendMessageToClient)(msg_t *msg, client_t *client);
-void    (*SV_Netchan_TransmitNextFragment)(client_t *client);
 cvar_t* (*Cvar_Get)(const char *var_name, const char *var_value, int flags);
 int     (*Cmd_Argc)(void);
 char*   (*Cmd_Argv)(int arg);
