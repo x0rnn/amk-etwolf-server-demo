@@ -1,17 +1,22 @@
 #include "hook.h"
 
-subhook_t subhook_sv_init;
-subhook_t subhook_sv_netchan_transmit;
-subhook_t subhook_sv_executeclientmessage;
-subhook_t subhook_vm_call;
-
 /**
  * Installs function trampoline.
  */
 static void *hook_function(subhook_t *hook, unsigned long address, void *func) {
+
 	*hook = subhook_new((void *) address, func, 0);
-	subhook_install(*hook);
+
+	if (hook == NULL) {
+		return NULL;
+	}
+
+	if (subhook_install(*hook) < 0) {
+		return NULL;
+	}
+
 	return subhook_get_trampoline(*hook);
+
 }
 
 /**
@@ -20,10 +25,10 @@ static void *hook_function(subhook_t *hook, unsigned long address, void *func) {
 void __attribute__((constructor)) Construct() {
 
 	// Hooks.
-	SV_Init                 = hook_function(&subhook_sv_init, 0x8055F90, SVR_Init);
-	SV_Netchan_Transmit     = hook_function(&subhook_sv_netchan_transmit, 0x8059F70, SVR_Netchan_Transmit);
-	SV_ExecuteClientMessage = hook_function(&subhook_sv_executeclientmessage, 0x8051B80, SVR_ExecuteClientMessage);
-	VM_Call                 = hook_function(&subhook_vm_call, 0x8087680, SVR_VM_Call);
+	HOOK(SV_Init,                 subhook_sv_init,                 0x8055F90, SVR_Init);
+	HOOK(SV_Netchan_Transmit,     subhook_sv_netchan_transmit,     0x8059F70, SVR_Netchan_Transmit);
+	HOOK(SV_ExecuteClientMessage, subhook_sv_executeclientmessage, 0x8051B80, SVR_ExecuteClientMessage);
+	HOOK(VM_Call,                 subhook_vm_call,                 0x8087680, SVR_VM_Call);
 
 	// Common functions.
 	Cmd_AddCommand = (void *) 0x8069C30;

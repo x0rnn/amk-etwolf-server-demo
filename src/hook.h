@@ -5,11 +5,6 @@
 #include "record.h"
 #include "../subhook/subhook.h"
 
-typedef struct {
-	unsigned long address;
-	void          *hook;
-	void          *orig;
-	subhook_t     handle;
-} Hook;
+#define HOOK(a, b, c, d) subhook_t b; a = hook_function(&b, c, d); if (!a) return
 
 #endif
