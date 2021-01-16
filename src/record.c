@@ -357,7 +357,8 @@ static void SV_InitGame(int levelTime, int randomSeed, int restart) {
 
 	sprintf(svr.demoPath, "%s/%s/demos/", fs_homepath->string, mod);
 
-	svr.gameState = GS_INITIALIZE;
+	svr.demoCounter = 0;
+	svr.gameState   = GS_INITIALIZE;
 
 }
 
