@@ -90,7 +90,7 @@ static qboolean SVR_DemoName(record_t *record) {
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 
 		// Pattern isn't unique enough? We can't let it write into the same file twice.
-		if (GetClientNumber(&record[i]) != i && strcmp(records[i].filename, record->filename) == 0) {
+		if (GetClientNumber(record) != i && strcmp(records[i].filename, record->filename) == 0) {
 			Com_Printf("Demo file %s is already in use.\n");
 			return qfalse;
 		}
