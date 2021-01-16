@@ -33,7 +33,7 @@ static void SVR_Write(record_t *record, void *buffer, size_t size) {
 	int written = fwrite(buffer, 1, size, record->handle);
 
 	if (written < size) {
-		Com_Printf("%d should get written, actual: %d\n", size, written);
+		Com_Printf("Failed to write %d bytes into %s, stopping.\n", size - written, record->filename);
 		SVR_StopRecord(GetClient(record));
 	}
 
@@ -122,6 +122,24 @@ static void SVR_CreateGameStateMessage(record_t *record, msg_t *msg, qboolean up
 
 }
 
+static char *SVR_DemoName(record_t *record) {
+
+	char mod[32];
+	client_t *client = GetClient(record);
+
+	if (fs_gamedirvar->string[0]) {
+		strcpy(mod, fs_gamedirvar->string);
+	} else {
+		strcpy(mod, "etmain");
+	}
+
+	memset(record->filename, 0, sizeof(record->filename));
+	sprintf(record->filename, "%s/%s/demos/", fs_homepath->string, mod);
+	strftime(record->filename + strlen(record->filename), sizeof(record->filename) - strlen(record->filename), "%Y-%m-%d-%H%M%S", gameTime);
+	sprintf(record->filename + strlen(record->filename), "_%04d.dm_%d", demoCounter++, PROTOCOL_VERSION);
+
+}
+
 /**
  * Starts recording.
  */
@@ -132,11 +150,23 @@ void SVR_Record(client_t *client) {
 	int   len;
 
 	record_t *record = GetRecord(client);
+	SVR_DemoName(record);
 
-	record->handle = fopen("demo.dm_84", "wb");
+	if (FS_CreatePath(record->filename)) {
+		return;
+	}
+
+	record->handle = fopen(record->filename, "wb");
+
+	if (record->handle == NULL) {
+		Com_Printf("Could not open demo file: %s\n", record->filename);
+		return;
+	}
 
 	record->recording = qtrue;
 	record->waiting   = qtrue; // Await first non-delta snapshot.
+
+	Com_Printf("Recording to %s\n", record->filename);
 
 	MSG_Init(&msg, bufData, sizeof(bufData));
 
@@ -168,6 +198,8 @@ void SVR_StopRecord(client_t *client) {
 	record->recording = qfalse;
 
 	fclose(record->handle);
+
+	Com_Printf("Stopped demo %s\n", record->filename);
 
 }
 
@@ -203,6 +235,10 @@ void SVR_Init(void) {
 	Cmd_AddCommand("stoprecord", (xcommand_t) SVR_StopRecord_f);
 
 	sv_maxclients = Cvar_Get("sv_maxclients", "20", CVAR_SERVERINFO | CVAR_LATCH);
+	fs_basegame   = Cvar_Get("fs_basegame", "", CVAR_INIT);
+	fs_basepath   = Cvar_Get("fs_basepath", "", CVAR_INIT);
+	fs_homepath   = Cvar_Get("fs_homepath", "", CVAR_INIT);
+	fs_gamedirvar = Cvar_Get("fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO);
 
 }
 
@@ -273,7 +309,6 @@ void SVR_Netchan_Transmit(client_t *client, msg_t *msg) {
 
 }
 
-// TODO: Remove.
 void SVR_ExecuteClientMessage(client_t *cl, msg_t *msg) {
 
 	SV_ExecuteClientMessage(cl, msg);
@@ -302,5 +337,41 @@ void SVR_SendClientGameState(client_t *client) {
 
 	SVR_CreateGameStateMessage(GetRecord(client), &msg, qtrue);
 	SV_SendMessageToClient(&msg, client);
+
+}
+
+static void SV_InitGame(int levelTime, int randomSeed, int restart) {
+	time_t sTime = time(NULL);
+	gameTime     = localtime(&sTime);
+	demoCounter  = 0;
+}
+
+static void SV_GameShutdown() {
+
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+
+		if (records[i].recording) {
+			SVR_StopRecord(GetClient(&records[i]));
+		}
+
+	}
+
+}
+
+int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12) {
+
+	switch (callnum) {
+
+		case GAME_INIT:
+			SV_InitGame(a1, a2, a3);
+			break;
+
+		case GAME_SHUTDOWN:
+			SV_GameShutdown();
+			break;
+
+	}
+
+	return VM_Call(vm, callnum, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 
 }

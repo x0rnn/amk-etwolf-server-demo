@@ -30,6 +30,7 @@
 #define MAX_BPS_WINDOW                    20
 #define MAX_SERVER_TAGS                   256
 #define MAX_TAG_FILES                     64
+#define PROTOCOL_VERSION                  84
 
 #define CVAR_ARCHIVE    1
 #define CVAR_USERINFO   2
@@ -39,6 +40,7 @@
 #define CVAR_LATCH      32
 
 #define LittleLong(x) (x)
+#define QDECL
 
 typedef float vec_t;
 typedef vec_t vec3_t[3];
@@ -475,18 +477,68 @@ typedef struct cvar_s {
 	struct cvar_s *hashNext;
 } cvar_t;
 
+typedef struct vmSymbol_s {
+	struct vmSymbol_s *next;
+	int               symValue;
+	int               profileCount;
+	char              symName[1];
+} vmSymbol_t;
+
+typedef struct vm_s {
+	int programStack;
+	int (*systemCall)(int *parms);
+	char name[MAX_QPATH];
+	char fqpath[MAX_QPATH + 1];
+	void *dllHandle;
+	int (QDECL *entryPoint)(int callNum, ...);
+	qboolean          currentlyInterpreting;
+	qboolean          compiled;
+	char              *codeBase;
+	int               codeLength;
+	int               *instructionPointers;
+	int               instructionPointersLength;
+	char              *dataBase;
+	int               dataMask;
+	int               stackBottom;
+	int               numSymbols;
+	struct vmSymbol_s *symbols;
+	int               callLevel;
+	int               breakFunction;
+	int               breakCount;
+} vm_t;
+
+typedef enum {
+	GAME_INIT,
+	GAME_SHUTDOWN,
+	GAME_CLIENT_CONNECT,
+	GAME_CLIENT_BEGIN,
+	GAME_CLIENT_USERINFO_CHANGED,
+	GAME_CLIENT_DISCONNECT,
+	GAME_CLIENT_COMMAND,
+	GAME_CLIENT_THINK,
+	GAME_RUN_FRAME,
+	GAME_CONSOLE_COMMAND,
+	GAME_SNAPSHOT_CALLBACK,
+	BOTAI_START_FRAME,
+	BOT_VISIBLEFROMPOS,
+	BOT_CHECKATTACKATPOS,
+	GAME_MESSAGERECEIVED,
+} gameExport_t;
+
 typedef void (*xcommand_t)(void);
 
-void    (*Cmd_AddCommand)(const char *cmd_name, xcommand_t function);
-void    (*Com_Printf)(const char *msg, ...);
-void    (*SV_Init)(void);
-void    (*SV_Netchan_Transmit)(client_t *client, msg_t *msg);
-void    (*SV_ExecuteClientMessage)(client_t *cl, msg_t *msg);
-void    (*SV_SendClientGameState)(client_t *client);
-void    (*SV_SendMessageToClient)(msg_t *msg, client_t *client);
-cvar_t* (*Cvar_Get)(const char *var_name, const char *var_value, int flags);
-int     (*Cmd_Argc)(void);
-char*   (*Cmd_Argv)(int arg);
+void      (*Cmd_AddCommand)(const char *cmd_name, xcommand_t function);
+void      (*Com_Printf)(const char *msg, ...);
+void      (*SV_Init)(void);
+void      (*SV_Netchan_Transmit)(client_t *client, msg_t *msg);
+void      (*SV_ExecuteClientMessage)(client_t *cl, msg_t *msg);
+void      (*SV_SendClientGameState)(client_t *client);
+void      (*SV_SendMessageToClient)(msg_t *msg, client_t *client);
+cvar_t*   (*Cvar_Get)(const char *var_name, const char *var_value, int flags);
+int       (*Cmd_Argc)(void);
+char*     (*Cmd_Argv)(int arg);
+int QDECL (*VM_Call)(vm_t *vm, int callnum, ...);
+qboolean  (*FS_CreatePath)(const char *OSPath_);
 
 void (*MSG_Init)(msg_t *buf, char *data, int length);
 void (*MSG_Bitstream)(msg_t *buf);
@@ -501,5 +553,9 @@ serverStatic_t *svs;
 server_t       *sv;
 
 cvar_t *sv_maxclients;
+cvar_t *fs_basegame;
+cvar_t *fs_basepath;
+cvar_t *fs_homepath;
+cvar_t *fs_gamedirvar;
 
 #endif
