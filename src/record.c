@@ -363,6 +363,25 @@ static void SV_GameShutdown(qboolean restart) {
 }
 
 /**
+ * Called whenever a client disconnects.
+ */
+static void SV_ClientDisconnect(int clientNum) {
+
+	record_t *record = &records[clientNum];
+
+	if (record->recording) {
+		SVR_StopRecord(GetClient(record));
+	}
+
+}
+
+/**
+ * Called whenever a client enters game world.
+ */
+static void SV_ClientBegin(int clientNum) {
+}
+
+/**
  * VM_Call hook.
  */
 int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12) {
@@ -375,6 +394,14 @@ int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int
 
 		case GAME_SHUTDOWN:
 			SV_GameShutdown(a1);
+			break;
+
+		case GAME_CLIENT_BEGIN:
+			SV_ClientBegin(a1);
+			break;
+
+		case GAME_CLIENT_DISCONNECT:
+			SV_ClientDisconnect(a1);
 			break;
 
 	}
