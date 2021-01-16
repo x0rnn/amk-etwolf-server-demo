@@ -82,17 +82,10 @@ static void SVR_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
  */
 static qboolean SVR_DemoName(record_t *record) {
 
-	char mod[32];
 	client_t *client = GetClient(record);
 
-	if (fs_gamedirvar->string[0]) {
-		strcpy(mod, fs_gamedirvar->string);
-	} else {
-		strcpy(mod, "etmain");
-	}
-
 	memset(record->filename, 0, sizeof(record->filename));
-	sprintf(record->filename, "%s/%s/demos/%s_%04d.dm_%d", fs_homepath->string, mod, svr.gameTime, svr.demoCounter++, PROTOCOL_VERSION);
+	sprintf(record->filename, "%s_%04d.dm_%d", svr.gameTime, svr.demoCounter++, PROTOCOL_VERSION);
 
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 
@@ -116,6 +109,7 @@ void SVR_Record(client_t *client) {
 	int           i;
 	msg_t         msg;
 	char          bufData[MAX_MSGLEN];
+	char          demoPath[MAX_OSPATH];
 	entityState_t *ent;
 	entityState_t nullstate;
 	int           len;
@@ -130,7 +124,10 @@ void SVR_Record(client_t *client) {
 		return;
 	}
 
-	record->handle = fopen(record->filename, "wb");
+	strcpy(demoPath, svr.demoPath);
+	strcat(demoPath, record->filename);
+
+	record->handle = fopen(demoPath, "wb");
 
 	if (record->handle == NULL) {
 		Com_Printf("Could not open demo file: %s\n", record->filename);
@@ -338,8 +335,20 @@ void SVR_ExecuteClientMessage(client_t *cl, msg_t *msg) {
  * We use that to obtain the map time.
  */
 static void SV_InitGame(int levelTime, int randomSeed, int restart) {
+
+	char mod[32];
+
 	time_t x = time(NULL);
 	strftime(svr.gameTime, sizeof(svr.gameTime), "%Y-%m-%d-%H%M%S", localtime(&x));
+
+	if (fs_gamedirvar->string[0]) {
+		strcpy(mod, fs_gamedirvar->string);
+	} else {
+		strcpy(mod, "etmain");
+	}
+
+	sprintf(svr.demoPath, "%s/%s/demos/", fs_homepath->string, mod);
+
 }
 
 /**

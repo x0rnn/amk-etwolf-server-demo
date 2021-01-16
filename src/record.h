@@ -26,6 +26,7 @@ typedef struct {
 struct {
 	char gameTime[18];
 	int  demoCounter;
+	char demoPath[MAX_OSPATH];
 } svr;
 
 void      SVR_Init(void);
