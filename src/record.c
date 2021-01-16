@@ -4,7 +4,7 @@
  * Returns client number from record.
  */
 inline static int GetClientNumber(record_t *record) {
-	return (record - records) / sizeof(record);
+	return record - records;
 }
 
 /**
@@ -80,7 +80,7 @@ static void SVR_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
 /**
  * Generates an unique demo name.
  */
-static char *SVR_DemoName(record_t *record) {
+static qboolean SVR_DemoName(record_t *record) {
 
 	char mod[32];
 	client_t *client = GetClient(record);
@@ -92,9 +92,19 @@ static char *SVR_DemoName(record_t *record) {
 	}
 
 	memset(record->filename, 0, sizeof(record->filename));
-	sprintf(record->filename, "%s/%s/demos/", fs_homepath->string, mod);
-	strftime(record->filename + strlen(record->filename), sizeof(record->filename) - strlen(record->filename), "%Y-%m-%d-%H%M%S", gameTime);
-	sprintf(record->filename + strlen(record->filename), "_%04d.dm_%d", demoCounter++, PROTOCOL_VERSION);
+	sprintf(record->filename, "%s/%s/demos/%s_%04d.dm_%d", fs_homepath->string, mod, svr.gameTime, svr.demoCounter++, PROTOCOL_VERSION);
+
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+
+		// Pattern isn't unique enough? We can't let it write into the same file twice.
+		if (GetClientNumber(&record[i]) != i && strcmp(records[i].filename, record->filename) == 0) {
+			Com_Printf("Demo file %s is already in use.\n");
+			return qfalse;
+		}
+
+	}
+
+	return qtrue;
 
 }
 
@@ -111,7 +121,10 @@ void SVR_Record(client_t *client) {
 	int           len;
 
 	record_t *record = GetRecord(client);
-	SVR_DemoName(record);
+
+	if (!SVR_DemoName(record)) {
+		return;
+	}
 
 	if (FS_CreatePath(record->filename)) {
 		return;
@@ -325,9 +338,8 @@ void SVR_ExecuteClientMessage(client_t *cl, msg_t *msg) {
  * We use that to obtain the map time.
  */
 static void SV_InitGame(int levelTime, int randomSeed, int restart) {
-	time_t sTime = time(NULL);
-	gameTime     = localtime(&sTime);
-	demoCounter  = 0;
+	time_t x = time(NULL);
+	strftime(svr.gameTime, sizeof(svr.gameTime), "%Y-%m-%d-%H%M%S", localtime(&x));
 }
 
 /**

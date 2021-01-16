@@ -23,6 +23,11 @@ typedef struct {
 	char     filename[MAX_OSPATH];
 } record_t;
 
+struct {
+	char gameTime[18];
+	int  demoCounter;
+} svr;
+
 void      SVR_Init(void);
 void      SVR_Record(client_t *client);
 void      SVR_StopRecord(client_t *client);
@@ -33,7 +38,5 @@ void      SVR_ExecuteClientMessage(client_t *cl, msg_t *msg);
 int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12);
 
 record_t  records[MAX_CLIENTS];
-struct tm *gameTime;
-int       demoCounter;
 
 #endif
