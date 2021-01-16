@@ -242,6 +242,9 @@ void SVR_Init(void) {
 	fs_basepath   = Cvar_Get("fs_basepath", "", CVAR_INIT);
 	fs_homepath   = Cvar_Get("fs_homepath", "", CVAR_INIT);
 	fs_gamedirvar = Cvar_Get("fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO);
+	gamestate     = Cvar_Get("gamestate", "-1", CVAR_WOLFINFO | CVAR_ROM);
+
+	svr_autoRecord = Cvar_Get("svr_autorecord", "0", CVAR_ARCHIVE);
 
 }
 
@@ -251,6 +254,11 @@ void SVR_Init(void) {
 void SVR_Record_f(void) {
 
 	int clientNum;
+
+	if (gamestate->integer < GS_PLAYING || gamestate->integer > GS_WARMUP) {
+		Com_Printf("Game is not running.\n");
+		return;
+	}
 
 	if (!GetArgClientNum("record", &clientNum)) {
 		return;
@@ -349,6 +357,43 @@ static void SV_InitGame(int levelTime, int randomSeed, int restart) {
 
 	sprintf(svr.demoPath, "%s/%s/demos/", fs_homepath->string, mod);
 
+	svr.gameState = GS_INITIALIZE;
+
+}
+
+/**
+ * Starts recording everyone.
+ */
+static void SV_StartRecordAll() {
+
+	client_t *client;
+
+	for (int i = 0; i < sv_maxclients->integer; i++) {
+
+		client = GetClient(&records[i]);
+
+		if (!records[i].recording && client->state == CS_ACTIVE) {
+			SVR_Record(client);
+		}
+
+	}
+
+}
+
+/**
+ * Stops recording everyone.
+ */
+static void SV_StopRecordAll() {
+
+	// Use MAX_CLIENTS here, just to be safe.
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+
+		if (records[i].recording) {
+			SVR_StopRecord(GetClient(&records[i]));
+		}
+
+	}
+
 }
 
 /**
@@ -361,12 +406,44 @@ static void SV_GameShutdown(qboolean restart) {
 		return;
 	}
 
-	for (int i = 0; i < MAX_CLIENTS; i++) {
+	SV_StopRecordAll();
 
-		if (records[i].recording) {
-			SVR_StopRecord(GetClient(&records[i]));
+}
+
+/**
+ * Called on every frame.
+ */
+static void SV_RunFrame(int serverTime) {
+
+	if (gamestate->integer != svr.gameState) {
+
+		switch (gamestate->integer) {
+
+			// Autorecord when countdown or game starts.
+			case GS_WARMUP_COUNTDOWN:
+			case GS_PLAYING:
+
+				if (svr_autoRecord->integer) {
+					SV_StartRecordAll();
+				}
+
+				break;
+
+			// Intermission stop recording countdown begins.
+			case GS_INTERMISSION:
+				svr.intermissionTime = serverTime;
+				break;
+
 		}
 
+		svr.gameState = gamestate->integer;
+
+	}
+
+	// Intermission stop record countdown elapsed.
+	if (svr.intermissionTime && svr.gameState == GS_INTERMISSION && svr.intermissionTime + INTERMISSION_STOP_DELAY < serverTime) {
+		svr.intermissionTime = 0;
+		SV_StopRecordAll();
 	}
 
 }
@@ -388,6 +465,14 @@ static void SV_ClientDisconnect(int clientNum) {
  * Called whenever a client enters game world.
  */
 static void SV_ClientBegin(int clientNum) {
+
+	record_t *record = &records[clientNum];
+	client_t *client = GetClient(record);
+
+	if (svr_autoRecord->integer && !record->recording && client->state == CS_ACTIVE) {
+		SVR_Record(client);
+	}
+
 }
 
 /**
@@ -399,6 +484,10 @@ int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int
 
 		case GAME_INIT:
 			SV_InitGame(a1, a2, a3);
+			break;
+
+		case GAME_RUN_FRAME:
+			SV_RunFrame(a1);
 			break;
 
 		case GAME_SHUTDOWN:

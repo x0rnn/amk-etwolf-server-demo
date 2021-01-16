@@ -15,6 +15,8 @@
 #include <unistd.h>
 #include "etwolf.h"
 
+#define INTERMISSION_STOP_DELAY 5000
+
 typedef struct {
 	qboolean recording;
 	qboolean waiting;
@@ -24,9 +26,11 @@ typedef struct {
 } record_t;
 
 struct {
-	char gameTime[18];
-	int  demoCounter;
-	char demoPath[MAX_OSPATH];
+	char        gameTime[18];
+	int         demoCounter;
+	char        demoPath[MAX_OSPATH];
+	gamestate_t gameState;
+	int         intermissionTime;
 } svr;
 
 void      SVR_Init(void);
@@ -39,5 +43,7 @@ void      SVR_ExecuteClientMessage(client_t *cl, msg_t *msg);
 int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12);
 
 record_t  records[MAX_CLIENTS];
+
+cvar_t *svr_autoRecord;
 
 #endif

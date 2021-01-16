@@ -32,12 +32,20 @@
 #define MAX_TAG_FILES                     64
 #define PROTOCOL_VERSION                  84
 
-#define CVAR_ARCHIVE    1
-#define CVAR_USERINFO   2
-#define CVAR_SERVERINFO 4
-#define CVAR_SYSTEMINFO 8
-#define CVAR_INIT       16
-#define CVAR_LATCH      32
+#define CVAR_ARCHIVE             1
+#define CVAR_USERINFO            2
+#define CVAR_SERVERINFO          4
+#define CVAR_SYSTEMINFO          8
+#define CVAR_INIT                16
+#define CVAR_LATCH               32
+#define CVAR_ROM                 64
+#define CVAR_USER_CREATED        128
+#define CVAR_TEMP                256
+#define CVAR_CHEAT               512
+#define CVAR_NORESTART           1024
+#define CVAR_WOLFINFO            2048
+#define CVAR_UNSAFE              4096
+#define CVAR_SERVERINFO_NOUPDATE 8192
 
 #define LittleLong(x) (x)
 #define QDECL
@@ -525,6 +533,16 @@ typedef enum {
 	GAME_MESSAGERECEIVED,
 } gameExport_t;
 
+typedef enum {
+	GS_INITIALIZE = -1,
+	GS_PLAYING,
+	GS_WARMUP_COUNTDOWN,
+	GS_WARMUP,
+	GS_INTERMISSION,
+	GS_WAITING_FOR_PLAYERS,
+	GS_RESET,
+} gamestate_t;
+
 typedef void (*xcommand_t)(void);
 
 void      (*Cmd_AddCommand)(const char *cmd_name, xcommand_t function);
@@ -555,5 +573,6 @@ cvar_t *fs_basegame;
 cvar_t *fs_basepath;
 cvar_t *fs_homepath;
 cvar_t *fs_gamedirvar;
+cvar_t *gamestate;
 
 #endif
