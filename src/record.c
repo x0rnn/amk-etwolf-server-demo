@@ -334,7 +334,11 @@ static void SV_InitGame(int levelTime, int randomSeed, int restart) {
  * Called on game shutdown.
  * We'll close all the demos here.
  */
-static void SV_GameShutdown() {
+static void SV_GameShutdown(qboolean restart) {
+
+	if (restart) {
+		return;
+	}
 
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 
@@ -358,7 +362,7 @@ int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int
 			break;
 
 		case GAME_SHUTDOWN:
-			SV_GameShutdown();
+			SV_GameShutdown(a1);
 			break;
 
 	}
