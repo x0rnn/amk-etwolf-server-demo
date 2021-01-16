@@ -23,6 +23,7 @@ inline static record_t *GetRecord(client_t *client) {
 
 /**
  * Writes data to the demo.
+ * Automatically stops the recording when writing fails.
  */
 static void SVR_Write(record_t *record, void *buffer, size_t size) {
 
@@ -39,6 +40,9 @@ static void SVR_Write(record_t *record, void *buffer, size_t size) {
 
 }
 
+/**
+ * CL_WriteDemoMessage counterpart.
+ */
 static void SVR_WriteDemoMessage(record_t *record, msg_t *msg) {
 
 	int swLen;
@@ -55,7 +59,10 @@ static void SVR_WriteDemoMessage(record_t *record, msg_t *msg) {
 
 }
 
-// This got inlined.
+/**
+ * Copied SV_UpdateServerCommandsToClient.
+ * This was inlined in the vanilla binary.
+ */
 static void SVR_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
 
 	int i;
@@ -71,7 +78,8 @@ static void SVR_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
 }
 
 /**
- * Creates game state change message.
+ * Creates a gamestate message for the client when opening a demo or when sending update to the client.
+ * Credit: OpenJK
  */
 static void SVR_CreateGameStateMessage(record_t *record, msg_t *msg, qboolean updateServerCommands) {
 
@@ -122,6 +130,9 @@ static void SVR_CreateGameStateMessage(record_t *record, msg_t *msg, qboolean up
 
 }
 
+/**
+ * Generates an unique demo name.
+ */
 static char *SVR_DemoName(record_t *record) {
 
 	char mod[32];
@@ -225,7 +236,7 @@ static qboolean GetArgClientNum(char *command, int *clientNum) {
 }
 
 /**
- * Called once on startup.
+ * Called once on server startup.
  */
 void SVR_Init(void) {
 
@@ -284,6 +295,8 @@ void SVR_StopRecord_f(void) {
 
 /**
  * Captures the message to a client.
+ * This is the best place to capture the message - it's complete
+ * by now and it wasn't yet encoded for transmission.
  */
 void SVR_Netchan_Transmit(client_t *client, msg_t *msg) {
 
@@ -291,16 +304,15 @@ void SVR_Netchan_Transmit(client_t *client, msg_t *msg) {
 
 	if (record->recording && client->state == CS_ACTIVE) {
 
-		if (record->waiting && (client->deltaMessage <= 0 || client->netchan.outgoingSequence - client->deltaMessage >= (PACKET_BACKUP - 3))) {
+		// We have a non-delta compressed frame, recording can begin.
+		if (client->deltaMessage <= 0 || client->netchan.outgoingSequence - client->deltaMessage >= (PACKET_BACKUP - 3)) {
 			record->waiting = qfalse;
 		}
 
 		if (!record->waiting) {
-
 			msg_t msg_c = *msg;
 			MSG_WriteByte(&msg_c, svc_EOF);
 			SVR_WriteDemoMessage(record, &msg_c);
-
 		}
 
 	}
@@ -309,6 +321,10 @@ void SVR_Netchan_Transmit(client_t *client, msg_t *msg) {
 
 }
 
+/**
+ * SV_ExecuteClientMessage, but it makes the server send
+ * a non-delta compressed snapshot when the recording starts.
+ */
 void SVR_ExecuteClientMessage(client_t *cl, msg_t *msg) {
 
 	SV_ExecuteClientMessage(cl, msg);
@@ -322,6 +338,10 @@ void SVR_ExecuteClientMessage(client_t *cl, msg_t *msg) {
 
 }
 
+/**
+ * SV_SendClientGameState, but it uses logic defined... Actually what is this for?
+ * @param client
+ */
 void SVR_SendClientGameState(client_t *client) {
 
 	msg_t msg;
@@ -340,12 +360,20 @@ void SVR_SendClientGameState(client_t *client) {
 
 }
 
+/**
+ * Called on game initialization.
+ * We use that to obtain the map time.
+ */
 static void SV_InitGame(int levelTime, int randomSeed, int restart) {
 	time_t sTime = time(NULL);
 	gameTime     = localtime(&sTime);
 	demoCounter  = 0;
 }
 
+/**
+ * Called on game shutdown.
+ * We'll close all the demos here.
+ */
 static void SV_GameShutdown() {
 
 	for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -358,6 +386,9 @@ static void SV_GameShutdown() {
 
 }
 
+/**
+ * VM_Call hook.
+ */
 int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12) {
 
 	switch (callnum) {
