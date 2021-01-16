@@ -23,6 +23,7 @@ typedef struct {
 	FILE     *handle;
 	int      messageSequence;
 	char     filename[MAX_OSPATH];
+	qboolean connected;
 } record_t;
 
 struct {

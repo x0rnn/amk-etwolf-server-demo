@@ -114,7 +114,20 @@ void SVR_Record(client_t *client) {
 	entityState_t nullstate;
 	int           len;
 
+	if (client->state != CS_ACTIVE) {
+		return;
+	}
+
+	if (gamestate->integer < GS_PLAYING || gamestate->integer > GS_WARMUP) {
+		return;
+	}
+
 	record_t *record = GetRecord(client);
+
+	// We must not start the recording before the client is connected.
+	if (record->recording || !record->connected) {
+		return;
+	}
 
 	if (!SVR_DemoName(record)) {
 		return;
@@ -195,6 +208,10 @@ void SVR_StopRecord(client_t *client) {
 	int end          = -1;
 	record_t *record = GetRecord(client);
 
+	if (!record->recording) {
+		return;
+	}
+
 	SVR_Write(record, &end, 4);
 	SVR_Write(record, &end, 4);
 
@@ -218,7 +235,7 @@ static qboolean GetArgClientNum(char *command, int *clientNum) {
 
 	*clientNum = atoi(Cmd_Argv(1));
 
-	if (*clientNum >= sv_maxclients->integer || svs->clients[*clientNum].state != CS_ACTIVE) {
+	if (*clientNum >= sv_maxclients->integer || svs->clients[*clientNum].state != CS_ACTIVE || !records[*clientNum].connected) {
 		Com_Printf("Client %d is not active.\n", *clientNum);
 		return qfalse;
 	}
@@ -373,7 +390,7 @@ static void SV_StartRecordAll() {
 
 		client = GetClient(&records[i]);
 
-		if (!records[i].recording && client->state == CS_ACTIVE) {
+		if (gamestate->integer < GS_WARMUP) {
 			SVR_Record(client);
 		}
 
@@ -408,6 +425,10 @@ static void SV_GameShutdown(qboolean restart) {
 	}
 
 	SV_StopRecordAll();
+
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		records[i].connected = qfalse;
+	}
 
 }
 
@@ -455,6 +476,7 @@ static void SV_RunFrame(int serverTime) {
 static void SV_ClientDisconnect(int clientNum) {
 
 	record_t *record = &records[clientNum];
+	record->connected = qfalse;
 
 	if (record->recording) {
 		SVR_StopRecord(GetClient(record));
@@ -470,10 +492,26 @@ static void SV_ClientBegin(int clientNum) {
 	record_t *record = &records[clientNum];
 	client_t *client = GetClient(record);
 
-	if (svr_autoRecord->integer && !record->recording && client->state == CS_ACTIVE) {
-		SVR_Record(client);
+	if (svr_autoRecord->integer && !record->recording && client->state == CS_ACTIVE && record->connected) {
+
+		switch (gamestate->integer) {
+
+			case GS_PLAYING:
+			case GS_WARMUP_COUNTDOWN:
+				SVR_Record(client);
+				break;
+
+		}
+
 	}
 
+}
+
+/**
+ * Called whenever a client connects.
+ */
+static void SV_ClientConnect(int clientNum, qboolean firstTime, qboolean isBot) {
+	records[clientNum].connected = qtrue;
 }
 
 /**
@@ -493,6 +531,10 @@ int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int
 
 		case GAME_SHUTDOWN:
 			SV_GameShutdown(a1);
+			break;
+
+		case GAME_CLIENT_CONNECT:
+			SV_ClientConnect(a1, a2, a3);
 			break;
 
 		case GAME_CLIENT_BEGIN:
