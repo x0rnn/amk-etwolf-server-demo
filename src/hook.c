@@ -3,7 +3,6 @@
 subhook_t subhook_sv_init;
 subhook_t subhook_sv_netchan_transmit;
 subhook_t subhook_sv_executeclientmessage;
-subhook_t subhook_sv_sendclientgamestate;
 subhook_t subhook_vm_call;
 
 /**
@@ -24,7 +23,6 @@ void __attribute__((constructor)) Construct() {
 	SV_Init                 = hook_function(&subhook_sv_init, 0x8055F90, SVR_Init);
 	SV_Netchan_Transmit     = hook_function(&subhook_sv_netchan_transmit, 0x8059F70, SVR_Netchan_Transmit);
 	SV_ExecuteClientMessage = hook_function(&subhook_sv_executeclientmessage, 0x8051B80, SVR_ExecuteClientMessage);
-	SV_SendClientGameState  = hook_function(&subhook_sv_sendclientgamestate, 0x804EB60, SVR_SendClientGameState);
 	VM_Call                 = hook_function(&subhook_vm_call, 0x8087680, SVR_VM_Call);
 
 	// Common functions.
@@ -43,9 +41,6 @@ void __attribute__((constructor)) Construct() {
 	MSG_WriteString      = (void *) 0x807E790;
 	MSG_WriteBigString   = (void *) 0x807E8A0;
 	MSG_WriteDeltaEntity = (void *) 0x807D860;
-
-	// Server functions.
-	SV_SendMessageToClient = (void *) 0x805A580;
 
 	// FS functions.
 	FS_CreatePath = (void *) 0x8072AE0;

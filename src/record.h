@@ -30,8 +30,6 @@ void      SVR_Record_f(void);
 void      SVR_StopRecord_f(void);
 void      SVR_Netchan_Transmit(client_t *client, msg_t *msg);
 void      SVR_ExecuteClientMessage(client_t *cl, msg_t *msg);
-void      SVR_SendClientGameState(client_t *client);
-void      SVR_SendMessageToClient(msg_t *msg, client_t *client);
 int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, int a9, int a10, int a11, int a12);
 
 record_t  records[MAX_CLIENTS];

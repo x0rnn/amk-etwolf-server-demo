@@ -78,59 +78,6 @@ static void SVR_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
 }
 
 /**
- * Creates a gamestate message for the client when opening a demo or when sending update to the client.
- * Credit: OpenJK
- */
-static void SVR_CreateGameStateMessage(record_t *record, msg_t *msg, qboolean updateServerCommands) {
-
-	int           i;
-	entityState_t *ent;
-	entityState_t nullstate;
-	client_t      *client;
-
-	client = GetClient(record);
-
-	MSG_WriteLong(msg, client->lastClientCommand);
-
-	if (updateServerCommands) {
-		SVR_UpdateServerCommandsToClient(client, msg);
-	}
-
-	MSG_WriteByte(msg, svc_gamestate);
-	MSG_WriteLong(msg, client->reliableSequence);
-
-	for (i = 0 ; i < MAX_CONFIGSTRINGS ; i++) {
-
-		if (sv->configstrings[i][0]) {
-			MSG_WriteByte(msg, svc_configstring);
-			MSG_WriteShort(msg, i);
-			MSG_WriteBigString(msg, sv->configstrings[i]);
-		}
-
-	}
-
-	memset(&nullstate, 0, sizeof(nullstate));
-
-	for (i = 0 ; i < MAX_GENTITIES; i++) {
-
-		ent = &sv->svEntities[i].baseline;
-
-		if (!ent->number) {
-			continue;
-		}
-
-		MSG_WriteByte(msg, svc_baseline);
-		MSG_WriteDeltaEntity(msg, &nullstate, ent, qtrue);
-
-	}
-
-	MSG_WriteByte(msg, svc_EOF);
-	MSG_WriteLong(msg, GetClientNumber(record));
-	MSG_WriteLong(msg, sv->checksumFeed);
-
-}
-
-/**
  * Generates an unique demo name.
  */
 static char *SVR_DemoName(record_t *record) {
@@ -156,9 +103,12 @@ static char *SVR_DemoName(record_t *record) {
  */
 void SVR_Record(client_t *client) {
 
-	msg_t msg;
-	char  bufData[MAX_MSGLEN];
-	int   len;
+	int           i;
+	msg_t         msg;
+	char          bufData[MAX_MSGLEN];
+	entityState_t *ent;
+	entityState_t nullstate;
+	int           len;
 
 	record_t *record = GetRecord(client);
 	SVR_DemoName(record);
@@ -181,7 +131,39 @@ void SVR_Record(client_t *client) {
 
 	MSG_Init(&msg, bufData, sizeof(bufData));
 
-	SVR_CreateGameStateMessage(record, &msg, qfalse);
+	MSG_WriteLong(&msg, client->lastClientCommand);
+
+	MSG_WriteByte(&msg, svc_gamestate);
+	MSG_WriteLong(&msg, client->reliableSequence);
+
+	for (i = 0 ; i < MAX_CONFIGSTRINGS ; i++) {
+
+		if (sv->configstrings[i][0]) {
+			MSG_WriteByte(&msg, svc_configstring);
+			MSG_WriteShort(&msg, i);
+			MSG_WriteBigString(&msg, sv->configstrings[i]);
+		}
+
+	}
+
+	memset(&nullstate, 0, sizeof(nullstate));
+
+	for (i = 0 ; i < MAX_GENTITIES; i++) {
+
+		ent = &sv->svEntities[i].baseline;
+
+		if (!ent->number) {
+			continue;
+		}
+
+		MSG_WriteByte(&msg, svc_baseline);
+		MSG_WriteDeltaEntity(&msg, &nullstate, ent, qtrue);
+
+	}
+
+	MSG_WriteByte(&msg, svc_EOF);
+	MSG_WriteLong(&msg, GetClientNumber(record));
+	MSG_WriteLong(&msg, sv->checksumFeed);
 
 	MSG_WriteByte(&msg, svc_EOF);
 
@@ -335,28 +317,6 @@ void SVR_ExecuteClientMessage(client_t *cl, msg_t *msg) {
 	if (record->recording && record->waiting) {
 		cl->deltaMessage = -1;
 	}
-
-}
-
-/**
- * SV_SendClientGameState, but it uses logic defined... Actually what is this for?
- * @param client
- */
-void SVR_SendClientGameState(client_t *client) {
-
-	msg_t msg;
-	char  bufData[MAX_MSGLEN];
-
-	MSG_Init(&msg, bufData, sizeof(bufData));
-
-	client->state         = CS_PRIMED;
-	client->pureAuthentic = 0;
-	client->gotCP         = qfalse;
-
-	client->gamestateMessageNum = client->netchan.outgoingSequence;
-
-	SVR_CreateGameStateMessage(GetRecord(client), &msg, qtrue);
-	SV_SendMessageToClient(&msg, client);
 
 }
 
