@@ -487,19 +487,25 @@ static void SV_InitGame(int levelTime, int randomSeed, int restart) {
 
 	char mod[32];
 
-	time_t x = time(NULL);
-	strftime(svr.gameTime, sizeof(svr.gameTime), "%Y-%m-%d-%H%M%S", localtime(&x));
+	if (!restart || !svr.gameInitialized) {
 
-	if (fs_gamedirvar->string[0]) {
-		strcpy(mod, fs_gamedirvar->string);
-	} else {
-		strcpy(mod, "etmain");
+		svr.gameInitialized = qtrue;
+
+		time_t x = time(NULL);
+		strftime(svr.gameTime, sizeof(svr.gameTime), "%Y-%m-%d-%H%M%S", localtime(&x));
+
+		if (fs_gamedirvar->string[0]) {
+			strcpy(mod, fs_gamedirvar->string);
+		} else {
+			strcpy(mod, "etmain");
+		}
+
+		sprintf(svr.demoPath, "%s/%s/demos/", fs_homepath->string, mod);
+
+		svr.demoCounter = 0;
+		svr.gameState   = GS_INITIALIZE;
+
 	}
-
-	sprintf(svr.demoPath, "%s/%s/demos/", fs_homepath->string, mod);
-
-	svr.demoCounter = 0;
-	svr.gameState   = GS_INITIALIZE;
 
 }
 
@@ -550,9 +556,8 @@ static void SV_GameShutdown(qboolean restart) {
 
 	SV_StopRecordAll();
 
-	for (int i = 0; i < MAX_CLIENTS; i++) {
-		records[i].connected = qfalse;
-	}
+	// Reset all records.
+	memset(records, 0, sizeof(records));
 
 }
 

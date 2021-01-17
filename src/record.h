@@ -35,6 +35,7 @@ struct {
 	char        demoPath[MAX_OSPATH];
 	gamestate_t gameState;
 	int         intermissionTime;
+	qboolean    gameInitialized;
 } svr;
 
 void      SVR_Init(void);
