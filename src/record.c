@@ -267,6 +267,8 @@ void SVR_Record(client_t *client) {
 		return;
 	}
 
+	setvbuf(record->handle, NULL, _IOFBF, 1 << 14);
+
 	record->recording = qtrue;
 	record->waiting   = qtrue; // Await first non-delta snapshot.
 
