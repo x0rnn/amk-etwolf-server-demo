@@ -90,24 +90,6 @@ static void SVR_WriteDemoMessage(record_t *record, msg_t *msg) {
 }
 
 /**
- * Copied SV_UpdateServerCommandsToClient.
- * This was inlined in the vanilla binary.
- */
-static void SVR_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
-
-	int i;
-
-	for (i = client->reliableAcknowledge + 1 ; i <= client->reliableSequence ; i++) {
-		MSG_WriteByte(msg, svc_serverCommand);
-		MSG_WriteLong(msg, i);
-		MSG_WriteString(msg, client->reliableCommands[i & (MAX_RELIABLE_COMMANDS - 1)]);
-	}
-
-	client->reliableSent = client->reliableSequence;
-
-}
-
-/**
  * Generates an unique demo name.
  */
 static void SVR_DemoName(record_t *record, int order) {
