@@ -31,6 +31,7 @@
 #define MAX_SERVER_TAGS                   256
 #define MAX_TAG_FILES                     64
 #define PROTOCOL_VERSION                  84
+#define MAX_NAME_LENGTH                   36
 
 #define CVAR_ARCHIVE             1
 #define CVAR_USERINFO            2
@@ -553,6 +554,7 @@ void      (*SV_ExecuteClientMessage)(client_t *cl, msg_t *msg);
 cvar_t*   (*Cvar_Get)(const char *var_name, const char *var_value, int flags);
 int       (*Cmd_Argc)(void);
 char*     (*Cmd_Argv)(int arg);
+char*     (*Info_ValueForKey)(const char *s, const char *key);
 int QDECL (*VM_Call)(vm_t *vm, int callnum, ...);
 qboolean  (*FS_CreatePath)(const char *OSPath_);
 
@@ -574,5 +576,6 @@ cvar_t *fs_basepath;
 cvar_t *fs_homepath;
 cvar_t *fs_gamedirvar;
 cvar_t *gamestate;
+cvar_t *mapname;
 
 #endif

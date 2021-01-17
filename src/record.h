@@ -17,6 +17,9 @@
 
 #define INTERMISSION_STOP_DELAY 5000
 
+#define Q_COLOR_ESCAPE  '^'
+#define Q_IsColorString(p)  (p && *(p) == Q_COLOR_ESCAPE && *((p) + 1) && *((p) + 1) != Q_COLOR_ESCAPE)
+
 typedef struct {
 	qboolean recording;
 	qboolean waiting;
@@ -46,5 +49,6 @@ int QDECL SVR_VM_Call(vm_t *vm, int callnum, int a1, int a2, int a3, int a4, int
 record_t  records[MAX_CLIENTS];
 
 cvar_t *svr_autoRecord;
+cvar_t *svr_demoName;
 
 #endif

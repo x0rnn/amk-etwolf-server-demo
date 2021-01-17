@@ -31,11 +31,12 @@ void __attribute__((constructor)) Construct() {
 	HOOK(VM_Call,                 subhook_vm_call,                 0x8087680, SVR_VM_Call);
 
 	// Common functions.
-	Cmd_AddCommand = (void *) 0x8069C30;
-	Com_Printf     = (void *) 0x806C450;
-	Cvar_Get       = (void *) 0x8071E40;
-	Cmd_Argc       = (void *) 0x8069780;
-	Cmd_Argv       = (void *) 0x8069790;
+	Cmd_AddCommand   = (void *) 0x8069C30;
+	Com_Printf       = (void *) 0x806C450;
+	Cvar_Get         = (void *) 0x8071E40;
+	Cmd_Argc         = (void *) 0x8069780;
+	Cmd_Argv         = (void *) 0x8069790;
+	Info_ValueForKey = (void *) 0x808F6A0;
 
 	// MSG functions.
 	MSG_Init             = (void *) 0x807F7D0;

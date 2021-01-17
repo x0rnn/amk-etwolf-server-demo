@@ -30,10 +30,22 @@ stoprecord <clientNum>
 
 All demos will be written to `%mod%/demos` folder.
 
-### Autorecording
+### Configuration
 
-You can record everyone automatically by setting:
+- `svr_autoRecord` Automatically record all players
+    - `0` disabled (default)
+    - `1` enabled
 
-~~~
-svr_autorecord 1
-~~~
+- `svr_demoName` Demo name format
+    - default: `%T-%g-%n`, outputs: `2021-06-24-143520-a4e12ef3-etplayer`
+
+| Character | Description                                                               |
+|-----------|---------------------------------------------------------------------------|
+| `%T`      | Map startup time                                                          |
+| `%t`      | Demo creation time                                                        |
+| `%G`      | Full GUID (32 hexadecimal characters)                                     |
+| `%g`      | Short GUID (8 last characters)                                            |
+| `%n`      | Player name                                                               |
+| `%p`      | Client number                                                             |
+| `%c`      | Demo counter (4 characters long zero padded number advanced on each demo) |
+| `%m`      | Map name                                                                  |

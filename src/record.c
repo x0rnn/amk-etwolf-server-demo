@@ -22,6 +22,36 @@ inline static record_t *GetRecord(client_t *client) {
 }
 
 /**
+ * Removes color escape sequences from string.
+ */
+char *Q_CleanStr(char *string) {
+
+	char* d;
+	char* s;
+	int   c;
+
+	s = string;
+	d = string;
+
+	while ((c = *s) != 0) {
+
+		if (Q_IsColorString(s)) {
+			s++;
+		} else if (c >= 0x20 && c <= 0x7E) {
+			*d++ = c;
+		}
+
+		s++;
+
+	}
+
+	*d = '\0';
+
+	return string;
+
+}
+
+/**
  * Writes data to the demo.
  * Automatically stops the recording when writing fails.
  */
@@ -80,24 +110,104 @@ static void SVR_UpdateServerCommandsToClient( client_t *client, msg_t *msg ) {
 /**
  * Generates an unique demo name.
  */
-static qboolean SVR_DemoName(record_t *record) {
+static void SVR_DemoName(record_t *record, int order) {
+
+	char   filename[MAX_OSPATH] = {0};
+	int    pLen, i, j, k;
+	time_t x;
+	char   name[MAX_NAME_LENGTH];
+	char   *guid;
 
 	client_t *client = GetClient(record);
 
-	memset(record->filename, 0, sizeof(record->filename));
-	sprintf(record->filename, "%s_%04d.dm_%d", svr.gameTime, svr.demoCounter++, PROTOCOL_VERSION);
+	pLen = strlen(svr_demoName->string);
 
-	for (int i = 0; i < MAX_CLIENTS; i++) {
+	for (i = 0; i < pLen; i++) {
 
-		// Pattern isn't unique enough? We can't let it write into the same file twice.
-		if (GetClientNumber(record) != i && strcmp(records[i].filename, record->filename) == 0) {
-			Com_Printf("Demo file %s is already in use.\n");
-			return qfalse;
+		if (svr_demoName->string[i] == '%' && i + 1 < pLen) {
+
+			switch (svr_demoName->string[i + 1]) {
+
+				case 'T':
+					strcpy(filename + strlen(filename), svr.gameTime);
+					break;
+
+				case 't':
+					x = time(NULL);
+					strftime(filename + strlen(filename), 18, "%Y-%m-%d-%H%M%S", localtime(&x));
+					break;
+
+				case 'G':
+				case 'g':
+
+					guid = Info_ValueForKey(client->userinfo, "cl_guid");
+					j    = strlen(guid);
+
+					for (k = svr_demoName->string[i + 1] == 'G' ? 0 : 32 - 8; k < 32; k++) {
+
+						if (k < j && (guid[k] >= '0' && guid[k] <= '9' || guid[k] >= 'a' && guid[k] <= 'f' || guid[k] >= 'A' && guid[k] <= 'F')) {
+							filename[strlen(filename)] = guid[k];
+						} else {
+							filename[strlen(filename)] = '0';
+						}
+
+					}
+
+					break;
+
+				case 'n':
+
+					memset(name, 0, sizeof(name));
+					strcpy(name, client->name);
+					Q_CleanStr(name);
+
+					j = strlen(name);
+
+					for (k = 0; k < j; k++) {
+
+						if (name[k] >= '0' && name[k] <= '9' || name[k] >= 'A' && name[k] <= 'Z' || name[k] >= 'a' && name[k] <= 'z') {
+							filename[strlen(filename)] = name[k];
+						} else {
+							filename[strlen(filename)] = '_';
+						}
+
+					}
+
+					break;
+
+				case 'p':
+					sprintf(filename + strlen(filename), "%02d", GetClientNumber(record));
+					break;
+
+				case 'c':
+					sprintf(filename + strlen(filename), "%04d", svr.demoCounter++);
+					break;
+
+				case 'm':
+					strcat(filename + strlen(filename), mapname->string);
+					break;
+
+				default:
+					i--; // Print an unknown character as is.
+
+			}
+
+			i++;
+			continue;
+
 		}
+
+		filename[strlen(filename)] = svr_demoName->string[i];
 
 	}
 
-	return qtrue;
+	memset(record->filename, 0, sizeof(record->filename));
+
+	if (order == 0) {
+		sprintf(record->filename, "%s.dm_%d", filename, PROTOCOL_VERSION);
+	} else {
+		sprintf(record->filename, "%s(%03d).dm_%d", filename, order, PROTOCOL_VERSION);
+	}
 
 }
 
@@ -129,16 +239,26 @@ void SVR_Record(client_t *client) {
 		return;
 	}
 
-	if (!SVR_DemoName(record)) {
-		return;
-	}
+	i = 0;
+
+	do {
+
+		if (i == 1000) {
+			Com_Printf("Could not find a non-existent demo file %s\n", record->filename);
+			return;
+		}
+
+		memset(demoPath, 0, sizeof(demoPath));
+		SVR_DemoName(record, i++);
+		strcpy(demoPath, svr.demoPath);
+		strcat(demoPath, record->filename);
+
+	} while(access(demoPath, F_OK) == 0);
 
 	if (FS_CreatePath(record->filename)) {
+		Com_Printf("Failed to create path for %s\n", demoPath);
 		return;
 	}
-
-	strcpy(demoPath, svr.demoPath);
-	strcat(demoPath, record->filename);
 
 	record->handle = fopen(demoPath, "wb");
 
@@ -260,8 +380,10 @@ void SVR_Init(void) {
 	fs_homepath   = Cvar_Get("fs_homepath", "", CVAR_INIT);
 	fs_gamedirvar = Cvar_Get("fs_game", "", CVAR_INIT | CVAR_SYSTEMINFO);
 	gamestate     = Cvar_Get("gamestate", "-1", CVAR_WOLFINFO | CVAR_ROM);
+	mapname       = Cvar_Get("mapname", "nomap", CVAR_SERVERINFO | CVAR_ROM);
 
 	svr_autoRecord = Cvar_Get("svr_autorecord", "0", CVAR_ARCHIVE);
+	svr_demoName   = Cvar_Get("svr_demoname", "%T-%g-%n", CVAR_ARCHIVE);
 
 }
 
