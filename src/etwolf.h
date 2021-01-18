@@ -556,7 +556,6 @@ int       (*Cmd_Argc)(void);
 char*     (*Cmd_Argv)(int arg);
 char*     (*Info_ValueForKey)(const char *s, const char *key);
 int QDECL (*VM_Call)(vm_t *vm, int callnum, ...);
-qboolean  (*FS_CreatePath)(const char *OSPath_);
 
 void (*MSG_Init)(msg_t *buf, char *data, int length);
 void (*MSG_Bitstream)(msg_t *buf);

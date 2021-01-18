@@ -48,9 +48,6 @@ void __attribute__((constructor)) Construct() {
 	MSG_WriteBigString   = (void *) 0x807E8A0;
 	MSG_WriteDeltaEntity = (void *) 0x807D860;
 
-	// FS functions.
-	FS_CreatePath = (void *) 0x8072AE0;
-
 	// Server state mapping.
 	svs = (serverStatic_t *) 0x8874BA0;
 	sv  = (server_t *)       0x880A420;

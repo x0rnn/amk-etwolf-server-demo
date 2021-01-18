@@ -202,6 +202,7 @@ void SVR_Record(client_t *client) {
 	msg_t         msg;
 	char          bufData[MAX_MSGLEN];
 	char          demoPath[MAX_OSPATH];
+	char          dir[MAX_OSPATH];
 	entityState_t *ent;
 	entityState_t nullstate;
 	int           len;
@@ -237,8 +238,19 @@ void SVR_Record(client_t *client) {
 
 	} while(access(demoPath, F_OK) == 0);
 
-	if (FS_CreatePath(record->filename)) {
-		Com_Printf("Failed to create path for %s\n", demoPath);
+	strcpy(dir, demoPath);
+
+	for (i = strlen(dir) - 1; i >= 0; i--) {
+
+		if (dir[i] == '/') {
+			dir[i] = 0;
+			break;
+		}
+
+	}
+
+	if (mkdir(dir, 0700) != 0) {
+		Com_Printf("Failed to create %s: %s\n", strerror(errno));
 		return;
 	}
 

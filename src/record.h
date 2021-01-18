@@ -1,11 +1,15 @@
 #ifndef ETWOLF_SERVER_DEMO_RECORD_H
 #define ETWOLF_SERVER_DEMO_RECORD_H
 
+// CLion is sometimes retarded.
+#if 0
 #define __attribute_pure__
 #define __THROW
 #define __THROWNL
 #define __nonnull(x)
 #define __wur
+#define __attribute_const__
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -13,6 +17,9 @@
 #include <stdarg.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
 #include "etwolf.h"
 
 #define INTERMISSION_STOP_DELAY 5000
