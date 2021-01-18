@@ -49,3 +49,7 @@ All demos will be written to `%mod%/demos` folder.
 | `%p`      | Client number                                                             |
 | `%c`      | Demo counter (4 characters long zero padded number advanced on each demo) |
 | `%m`      | Map name                                                                  |
+
+- `svr_compress` GZip compress demo files
+  - `0` disabled (default)
+  - `1` enabled

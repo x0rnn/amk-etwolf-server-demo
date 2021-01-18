@@ -20,9 +20,13 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
+#include <zlib.h>
 #include "etwolf.h"
 
 #define INTERMISSION_STOP_DELAY 5000
+
+#define CHUNK (1 << 14)
+#define SET_BINARY_MODE(file)
 
 #define Q_COLOR_ESCAPE  '^'
 #define Q_IsColorString(p)  (p && *(p) == Q_COLOR_ESCAPE && *((p) + 1) && *((p) + 1) != Q_COLOR_ESCAPE)
@@ -30,7 +34,9 @@
 typedef struct {
 	qboolean recording;
 	qboolean waiting;
+	qboolean compressed;
 	FILE     *handle;
+	gzFile   gzHandle;
 	int      messageSequence;
 	char     filename[MAX_OSPATH];
 	qboolean connected;
@@ -58,5 +64,6 @@ record_t  records[MAX_CLIENTS];
 
 cvar_t *svr_autoRecord;
 cvar_t *svr_demoName;
+cvar_t *svr_compress;
 
 #endif

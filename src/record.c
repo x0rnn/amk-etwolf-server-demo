@@ -52,20 +52,45 @@ char *Q_CleanStr(char *string) {
 }
 
 /**
- * Writes data to the demo.
- * Automatically stops the recording when writing fails.
+ * Closes handle.
  */
-static void SVR_Write(record_t *record, void *buffer, size_t size) {
+static void SVR_Close(record_t *record) {
 
 	if (!record->recording) {
 		return;
 	}
 
-	int written = fwrite(buffer, 1, size, record->handle);
+	record->recording = qfalse;
+
+	if (record->compressed) {
+		gzclose(record->gzHandle);
+	} else {
+		fclose(record->handle);
+	}
+
+}
+
+/**
+ * Writes data to the demo.
+ * Automatically stops the recording when writing fails.
+ */
+static void SVR_Write(record_t *record, void *buffer, size_t size) {
+
+	int written;
+
+	if (!record->recording) {
+		return;
+	}
+
+	if (record->compressed) {
+		written = gzwrite(record->gzHandle, buffer, size);
+	} else {
+		written = fwrite(buffer, 1, size, record->handle);
+	}
 
 	if (written < size) {
 		Com_Printf("Failed to write %d bytes into %s, stopping.\n", size - written, record->filename);
-		SVR_StopRecord(GetClient(record));
+		SVR_Close(record);
 	}
 
 }
@@ -191,6 +216,10 @@ static void SVR_DemoName(record_t *record, int order) {
 		sprintf(record->filename, "%s(%03d).dm_%d", filename, order, PROTOCOL_VERSION);
 	}
 
+	if (svr_compress->integer) {
+		strcat(record->filename, ".gz");
+	}
+
 }
 
 /**
@@ -254,14 +283,22 @@ void SVR_Record(client_t *client) {
 		return;
 	}
 
-	record->handle = fopen(demoPath, "wb");
+	record->compressed = svr_compress->integer;
 
-	if (record->handle == NULL) {
+	if (record->compressed) {
+		record->gzHandle = gzopen(demoPath, "wb");
+	} else {
+		record->handle = fopen(demoPath, "wb");
+	}
+
+	if (record->compressed && record->gzHandle == NULL || !record->compressed && record->handle == NULL) {
 		Com_Printf("Could not open demo file: %s\n", record->filename);
 		return;
 	}
 
-	setvbuf(record->handle, NULL, _IOFBF, 1 << 14);
+	if (!record->compressed) {
+		setvbuf(record->handle, NULL, _IOFBF, 1 << 14);
+	}
 
 	record->recording = qtrue;
 	record->waiting   = qtrue; // Await first non-delta snapshot.
@@ -331,9 +368,7 @@ void SVR_StopRecord(client_t *client) {
 	SVR_Write(record, &end, 4);
 	SVR_Write(record, &end, 4);
 
-	record->recording = qfalse;
-
-	fclose(record->handle);
+	SVR_Close(record);
 
 	Com_Printf("Stopped demo %s\n", record->filename);
 
@@ -380,6 +415,7 @@ void SVR_Init(void) {
 
 	svr_autoRecord = Cvar_Get("svr_autorecord", "0", CVAR_ARCHIVE);
 	svr_demoName   = Cvar_Get("svr_demoname", "%T-%m-%g-%n", CVAR_ARCHIVE);
+	svr_compress   = Cvar_Get("svr_compress", "0", CVAR_ARCHIVE);
 
 }
 
