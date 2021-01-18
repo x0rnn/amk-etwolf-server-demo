@@ -6,6 +6,7 @@ set(CMAKE_SYSTEM_VERSION gnu)
 set(CMAKE_SYSTEM_PROCESSOR i386)
 set(CMAKE_C_STANDARD 11)
 
+set(SUBHOOK_STATIC ON)
 set(SUBHOOK_FORCE_32BIT ON)
 
 add_subdirectory(subhook)
