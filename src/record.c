@@ -379,7 +379,7 @@ void SVR_Init(void) {
 	mapname       = Cvar_Get("mapname", "nomap", CVAR_SERVERINFO | CVAR_ROM);
 
 	svr_autoRecord = Cvar_Get("svr_autorecord", "0", CVAR_ARCHIVE);
-	svr_demoName   = Cvar_Get("svr_demoname", "%T-%g-%n", CVAR_ARCHIVE);
+	svr_demoName   = Cvar_Get("svr_demoname", "%T-%m-%g-%n", CVAR_ARCHIVE);
 
 }
 

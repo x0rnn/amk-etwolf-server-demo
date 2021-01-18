@@ -37,7 +37,7 @@ All demos will be written to `%mod%/demos` folder.
     - `1` enabled
 
 - `svr_demoName` Demo name format
-    - default: `%T-%g-%n`, outputs: `2021-06-24-143520-a4e12ef3-etplayer`
+    - default: `%T-%m-%g-%n`, outputs: `2021-06-24-143520-goldrush-a4e12ef3-et_player`
 
 | Character | Description                                                               |
 |-----------|---------------------------------------------------------------------------|
