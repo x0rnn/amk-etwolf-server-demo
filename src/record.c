@@ -249,8 +249,8 @@ void SVR_Record(client_t *client) {
 
 	}
 
-	if (mkdir(dir, 0700) != 0) {
-		Com_Printf("Failed to create %s: %s\n", strerror(errno));
+	if (mkdir(dir, 0700) != 0 && errno != EEXIST) {
+		Com_Printf("Failed to create %s: %s\n", demoPath, strerror(errno));
 		return;
 	}
 
