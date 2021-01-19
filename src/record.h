@@ -25,8 +25,7 @@
 
 #define INTERMISSION_STOP_DELAY 5000
 
-#define CHUNK (1 << 14)
-#define SET_BINARY_MODE(file)
+#define BUFFER_SIZE (1 << 15)
 
 #define Q_COLOR_ESCAPE  '^'
 #define Q_IsColorString(p)  (p && *(p) == Q_COLOR_ESCAPE && *((p) + 1) && *((p) + 1) != Q_COLOR_ESCAPE)

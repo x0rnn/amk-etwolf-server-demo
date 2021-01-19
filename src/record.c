@@ -115,7 +115,7 @@ static void SVR_WriteDemoMessage(record_t *record, msg_t *msg) {
 }
 
 /**
- * Generates an unique demo name.
+ * Generates a name.
  */
 static void SVR_DemoName(record_t *record, int order) {
 
@@ -297,7 +297,9 @@ void SVR_Record(client_t *client) {
 	}
 
 	if (!record->compressed) {
-		setvbuf(record->handle, NULL, _IOFBF, 1 << 14);
+		gzbuffer(record->gzHandle, BUFFER_SIZE);
+	} else {
+		setvbuf(record->handle, NULL, _IOFBF, BUFFER_SIZE);
 	}
 
 	record->recording = qtrue;
