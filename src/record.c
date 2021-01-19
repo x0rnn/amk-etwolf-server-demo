@@ -296,7 +296,7 @@ void SVR_Record(client_t *client) {
 		return;
 	}
 
-	if (!record->compressed) {
+	if (record->compressed) {
 		gzbuffer(record->gzHandle, BUFFER_SIZE);
 	} else {
 		setvbuf(record->handle, NULL, _IOFBF, BUFFER_SIZE);
