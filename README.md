@@ -8,11 +8,15 @@ Recorded demos are identical to standard client-side demos, so there's no need f
 
 ## Installation
 
+Build from source or [download .so from releases](https://klva.cz/code/amk/etwolf-server-demo/releases).
+
 The library needs to be preloaded into the `etded` binary, like this:
 
 ~~~
 LD_PRELOAD=/path/to/libetwolf_server_demo.so etded +set dedicated 2 +...
 ~~~
+
+Use absolute path for `LD_PRELOAD`.
 
 ## Usage
 
@@ -50,6 +54,6 @@ All demos will be written to `%mod%/demos` folder.
 | `%c`      | Demo counter (4 characters long zero padded number advanced on each demo) |
 | `%m`      | Map name                                                                  |
 
-- `svr_compress` GZip compress demo files
+- `svr_compress` GZip compress demo files (saves about 50 % of size)
   - `0` disabled (default)
   - `1` enabled
