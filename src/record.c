@@ -168,6 +168,10 @@ static qboolean SVR_DemoName(record_t *record, int order) {
 
 	for (i = 0; i < pLen; i++) {
 
+		if (svr_demoName->string[i] == '/') {
+			continue;
+		}
+
 		if (svr_demoName->string[i] == '%') {
 
 			if (i + 1 == pLen) {
