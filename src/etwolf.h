@@ -271,8 +271,8 @@ typedef struct {
 
 typedef struct {
 	int            type;
-	char           ip[4];
-	char           ipx[10];
+	unsigned char  ip[4];
+	unsigned char  ipx[10];
 	unsigned short port;
 } netadr_t;
 

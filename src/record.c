@@ -158,7 +158,7 @@ static qboolean SVR_DemoName(record_t *record, int order) {
 	char   filename[MAX_OSPATH] = {0};
 	int    pLen, i, j, k;
 	time_t x;
-	char   buffer[32];
+	char   buffer[64];
 	char   name[MAX_NAME_LENGTH];
 	char   *guid;
 
@@ -232,7 +232,7 @@ static qboolean SVR_DemoName(record_t *record, int order) {
 
 					}
 
-					CAT(buffer, "%s", buffer);
+					CAT(filename, "%s", buffer);
 
 					break;
 
@@ -248,6 +248,14 @@ static qboolean SVR_DemoName(record_t *record, int order) {
 					CAT(filename, "%s", mapname->string);
 					break;
 
+				case 'i':
+					CAT(filename, "%d.%d.%d.%d",
+						client->netchan.remoteAddress.ip[0],
+						client->netchan.remoteAddress.ip[1],
+						client->netchan.remoteAddress.ip[2],
+						client->netchan.remoteAddress.ip[3]);
+					break;
+
 				default:
 					i--; // Print an unknown character as is.
 
@@ -258,7 +266,7 @@ static qboolean SVR_DemoName(record_t *record, int order) {
 
 		}
 
-		CAT(filename, "%s", svr_demoName->string[i]);
+		CAT(filename, "%c", svr_demoName->string[i]);
 
 	}
 
