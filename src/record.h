@@ -20,7 +20,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <errno.h>
-#include <zlib.h>
+#include "../zlib/zlib.h"
 #include "etwolf.h"
 
 #define INTERMISSION_STOP_DELAY 5000
