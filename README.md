@@ -16,7 +16,9 @@ The library needs to be preloaded into the `etded` binary, like this:
 LD_PRELOAD=/path/to/libetwolf_server_demo.so etded +set dedicated 2 +...
 ~~~
 
-Use absolute path for `LD_PRELOAD`.
+> Use absolute path for `LD_PRELOAD`.
+
+> Do not upgrade or delete the library while the server it's preloaded into is running, unless segfault is what are you trying to achieve.
 
 ## Usage
 
