@@ -58,7 +58,7 @@ All demos will be written to `%mod%/demos` folder.
   - `0` disabled (default)
   - `1` enabled
 
-# Building
+## Building
 
 Install following packages (or their alternatives in non-Debian based distros) first:
 
