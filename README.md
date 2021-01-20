@@ -57,3 +57,26 @@ All demos will be written to `%mod%/demos` folder.
 - `svr_compress` GZip compress demo files (saves about 50 % of size)
   - `0` disabled (default)
   - `1` enabled
+
+# Building
+
+Install following packages (or their alternatives in non-Debian based distros) first:
+
+~~~bash
+apt install git build-essential cmake yasm libc6-dev-i386 g++-multilib
+~~~
+
+Clone the repository and pull the dependencies:
+
+~~~bash
+git clone https://klva.cz/code/amk/etwolf-server-demo.git
+git submodule update --init --recursive
+~~~
+
+And finally, build it:
+
+~~~bash
+cd etwolf-server-demo
+cmake .
+make
+~~~
