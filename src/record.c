@@ -52,6 +52,40 @@ char *Q_CleanStr(char *string) {
 }
 
 /**
+ * Appends formatted string to a buffer with a limited size.
+ */
+qboolean SVR_SCatF(char *buffer, size_t size, char *format, ...) {
+
+	int written;
+	int len = strlen(buffer);
+
+	if (len >= size - 1) {
+		Com_Printf("SVR_SCatF: Buffer full.\n");
+		return qfalse;
+	}
+
+	va_list args;
+	va_start(args, format);
+	written = vsnprintf(buffer + len, size - len, format, args);
+	va_end(args);
+
+	if (written < 0) {
+		Com_Printf("SVR_SCatF: Encoding error.\n");
+		return qfalse;
+	}
+
+	if (written >= len + size) {
+		Com_Printf("SVR_SCatF: Buffer overflow.\n");
+		return qfalse;
+	}
+
+	buffer[size - 1] = 0;
+
+	return qtrue;
+
+}
+
+/**
  * Closes handle.
  */
 static void SVR_Close(record_t *record) {
@@ -114,14 +148,17 @@ static void SVR_WriteDemoMessage(record_t *record, msg_t *msg) {
 
 }
 
+#define CAT(a, b, ...) if(!SVR_SCatF(a, MAX_OSPATH, b, __VA_ARGS__)) return qfalse
+
 /**
  * Generates a name.
  */
-static void SVR_DemoName(record_t *record, int order) {
+static qboolean SVR_DemoName(record_t *record, int order) {
 
 	char   filename[MAX_OSPATH] = {0};
 	int    pLen, i, j, k;
 	time_t x;
+	char   buffer[32];
 	char   name[MAX_NAME_LENGTH];
 	char   *guid;
 
@@ -131,21 +168,29 @@ static void SVR_DemoName(record_t *record, int order) {
 
 	for (i = 0; i < pLen; i++) {
 
-		if (svr_demoName->string[i] == '%' && i + 1 < pLen) {
+		if (svr_demoName->string[i] == '%') {
+
+			if (i + 1 == pLen) {
+				continue;
+			}
 
 			switch (svr_demoName->string[i + 1]) {
 
 				case 'T':
-					strcpy(filename + strlen(filename), svr.gameTime);
+					CAT(filename, "%s", svr.gameTime);
 					break;
 
 				case 't':
+					memset(buffer, 0, sizeof(buffer));
 					x = time(NULL);
-					strftime(filename + strlen(filename), 18, "%Y-%m-%d-%H%M%S", localtime(&x));
+					strftime(buffer, sizeof(buffer), "%Y-%m-%d-%H%M%S", localtime(&x));
+					CAT(filename, "%s", buffer);
 					break;
 
 				case 'G':
 				case 'g':
+
+					memset(buffer, 0, sizeof(buffer));
 
 					guid = Info_ValueForKey(client->userinfo, "cl_guid");
 					j    = strlen(guid);
@@ -153,19 +198,22 @@ static void SVR_DemoName(record_t *record, int order) {
 					for (k = svr_demoName->string[i + 1] == 'G' ? 0 : 32 - 8; k < 32; k++) {
 
 						if (k < j && (guid[k] >= '0' && guid[k] <= '9' || guid[k] >= 'a' && guid[k] <= 'f' || guid[k] >= 'A' && guid[k] <= 'F')) {
-							filename[strlen(filename)] = guid[k];
+							buffer[strlen(buffer)] = guid[k];
 						} else {
-							filename[strlen(filename)] = '0';
+							buffer[strlen(buffer)] = '0';
 						}
 
 					}
+
+					CAT(filename, "%s", buffer);
 
 					break;
 
 				case 'n':
 
+					memset(buffer, 0, sizeof(buffer));
 					memset(name, 0, sizeof(name));
-					strcpy(name, client->name);
+					strncpy(name, client->name, sizeof(name));
 					Q_CleanStr(name);
 
 					j = strlen(name);
@@ -173,25 +221,27 @@ static void SVR_DemoName(record_t *record, int order) {
 					for (k = 0; k < j; k++) {
 
 						if (name[k] >= '0' && name[k] <= '9' || name[k] >= 'A' && name[k] <= 'Z' || name[k] >= 'a' && name[k] <= 'z') {
-							filename[strlen(filename)] = name[k];
+							buffer[strlen(buffer)] = name[k];
 						} else {
-							filename[strlen(filename)] = '_';
+							buffer[strlen(buffer)] = '_';
 						}
 
 					}
 
+					CAT(buffer, "%s", buffer);
+
 					break;
 
 				case 'p':
-					sprintf(filename + strlen(filename), "%02d", GetClientNumber(record));
+					CAT(filename, "%02d", GetClientNumber(record));
 					break;
 
 				case 'c':
-					sprintf(filename + strlen(filename), "%04d", svr.demoCounter++);
+					CAT(filename, "%04d", svr.demoCounter++);
 					break;
 
 				case 'm':
-					strcat(filename + strlen(filename), mapname->string);
+					CAT(filename, "%s", mapname->string);
 					break;
 
 				default:
@@ -204,23 +254,28 @@ static void SVR_DemoName(record_t *record, int order) {
 
 		}
 
-		filename[strlen(filename)] = svr_demoName->string[i];
+		CAT(filename, "%s", svr_demoName->string[i]);
 
 	}
 
 	memset(record->filename, 0, sizeof(record->filename));
 
 	if (order == 0) {
-		sprintf(record->filename, "%s.dm_%d", filename, PROTOCOL_VERSION);
+		CAT(record->filename, "%s.dm_%d", filename, PROTOCOL_VERSION);
 	} else {
-		sprintf(record->filename, "%s(%03d).dm_%d", filename, order, PROTOCOL_VERSION);
+		CAT(record->filename, "%s(%03d).dm_%d", filename, order, PROTOCOL_VERSION);
 	}
 
 	if (svr_compress->integer) {
-		strcat(record->filename, ".gz");
+		CAT(record->filename, "%s", ".gz");
 	}
 
+	return qtrue;
+
 }
+
+#undef CAT
+#define CAT(a, b, ...) if(!SVR_SCatF(a, MAX_OSPATH, b, __VA_ARGS__)) return
 
 /**
  * Starts recording.
@@ -261,9 +316,13 @@ void SVR_Record(client_t *client) {
 		}
 
 		memset(demoPath, 0, sizeof(demoPath));
-		SVR_DemoName(record, i++);
-		strcpy(demoPath, svr.demoPath);
-		strcat(demoPath, record->filename);
+
+		if (!SVR_DemoName(record, i++)) {
+			return;
+		}
+
+		CAT(demoPath, "%s", svr.demoPath);
+		CAT(demoPath, "%s", record->filename);
 
 	} while(access(demoPath, F_OK) == 0);
 
@@ -527,12 +586,13 @@ static void SV_InitGame(int levelTime, int randomSeed, int restart) {
 		strftime(svr.gameTime, sizeof(svr.gameTime), "%Y-%m-%d-%H%M%S", localtime(&x));
 
 		if (fs_gamedirvar->string[0]) {
-			strcpy(mod, fs_gamedirvar->string);
+			strncpy(mod, fs_gamedirvar->string, sizeof(mod));
 		} else {
 			strcpy(mod, "etmain");
 		}
 
-		sprintf(svr.demoPath, "%s/%s/demos/", fs_homepath->string, mod);
+		memset(svr.demoPath, 0, sizeof(svr.demoPath));
+		SVR_SCatF(svr.demoPath, MAX_OSPATH, "%s/%s/demos/", fs_homepath->string, mod);
 
 		svr.demoCounter = 0;
 		svr.gameState   = GS_INITIALIZE;
