@@ -70,13 +70,13 @@ Clone the repository and pull the dependencies:
 
 ~~~bash
 git clone https://klva.cz/code/amk/etwolf-server-demo.git
+cd etwolf-server-demo
 git submodule update --init --recursive
 ~~~
 
 And finally, build it:
 
 ~~~bash
-cd etwolf-server-demo
 cmake .
 make
 ~~~
