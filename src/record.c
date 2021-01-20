@@ -388,7 +388,7 @@ static qboolean GetArgClientNum(char *command, int *clientNum) {
 
 	*clientNum = atoi(Cmd_Argv(1));
 
-	if (*clientNum >= sv_maxclients->integer || svs->clients[*clientNum].state != CS_ACTIVE || !records[*clientNum].connected) {
+	if (*clientNum < 0 || *clientNum >= sv_maxclients->integer || svs->clients[*clientNum].state != CS_ACTIVE || !records[*clientNum].connected) {
 		Com_Printf("Client %d is not active.\n", *clientNum);
 		return qfalse;
 	}
