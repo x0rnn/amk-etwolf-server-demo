@@ -18,7 +18,7 @@ LD_PRELOAD=/path/to/libetwolf_server_demo.so etded +set dedicated 2 +...
 
 > Use absolute path for `LD_PRELOAD`.
 
-> Do not upgrade or delete the library while the server it's preloaded into is running, unless segfault is what are you trying to achieve.
+> Do not upgrade the library while the server it's preloaded into is running, unless segfault is what are you trying to achieve. [Here's why.](https://unix.stackexchange.com/questions/74165/how-to-upgrade-shared-library-without-crash/74172#74172)
 
 ## Usage
 
