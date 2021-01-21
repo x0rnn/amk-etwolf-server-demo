@@ -744,7 +744,17 @@ static void SV_ClientBegin(int clientNum) {
  * Called whenever a client connects.
  */
 static void SV_ClientConnect(int clientNum, qboolean firstTime, qboolean isBot) {
-	records[clientNum].connected = qtrue;
+
+	record_t *record = &records[clientNum];
+
+	// Sometimes, for reasons I don't know, PunkBuster kick somehow doesn't lead
+	// to GAME_CLIENT_DISCONNECT. This isn't perfect, but at least does the job.
+	if (record->recording && firstTime) {
+		SVR_StopRecord(GetClient(record));
+	}
+
+	record->connected = qtrue;
+
 }
 
 /**
