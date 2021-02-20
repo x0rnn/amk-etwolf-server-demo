@@ -376,7 +376,9 @@ void SVR_Record(client_t *client) {
 	record->recording = qtrue;
 	record->waiting   = qtrue; // Await first non-delta snapshot.
 
-	Com_Printf("Recording to %s\n", record->filename);
+	if (!svr_noPrint->integer) {
+		Com_Printf("Recording to %s\n", record->filename);
+	}
 
 	MSG_Init(&msg, bufData, sizeof(bufData));
 
@@ -443,7 +445,9 @@ void SVR_StopRecord(client_t *client) {
 
 	SVR_Close(record);
 
-	Com_Printf("Stopped demo %s\n", record->filename);
+	if (!svr_noPrint->integer) {
+		Com_Printf("Stopped demo %s\n", record->filename);
+	}
 
 }
 
@@ -489,6 +493,7 @@ void SVR_Init(void) {
 	svr_autoRecord = Cvar_Get("svr_autorecord", "0", CVAR_ARCHIVE);
 	svr_demoName   = Cvar_Get("svr_demoname", "%T-%m-%g-%n", CVAR_ARCHIVE);
 	svr_compress   = Cvar_Get("svr_compress", "0", CVAR_ARCHIVE);
+	svr_noPrint    = Cvar_Get("svr_noprint", "0", CVAR_ARCHIVE);
 
 }
 

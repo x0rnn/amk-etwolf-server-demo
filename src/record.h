@@ -64,5 +64,6 @@ record_t  records[MAX_CLIENTS];
 cvar_t *svr_autoRecord;
 cvar_t *svr_demoName;
 cvar_t *svr_compress;
+cvar_t *svr_noPrint;
 
 #endif
